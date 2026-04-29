@@ -18,29 +18,29 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install and Build Web
+      - name: Install and Build
         run: |
+          # מוצא איפה נמצא הקוד האמיתי
           CONFIG_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$CONFIG_PATH")
           cd "$PROJECT_DIR"
-          find . -name "manifest.webmanifest" -delete || true
+          
+          # ניקוי ובניית ה-HTML
           npm install
           npm run build
-
-      - name: Build Android APK
-        run: |
-          CONFIG_PATH=$(find . -name package.json -print -quit)
-          cd $(dirname "$CONFIG_PATH")
-          # התקנת כלי המעטפת
+          
+          # הגדרת המעטפת (Capacitor)
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
-          npx cap sync
-          # בניית ה-APK בפועל
-          cd android && ./gradlew assembleDebug
+          
+          # בניית ה-APK
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
+          name: my-final-app
           path: "**/app-debug.apk"
