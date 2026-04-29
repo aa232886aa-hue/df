@@ -1,4 +1,4 @@
-name: Build from ZIP
+name: Build Android APK
 on:
   push:
     branches: [ main, master ]
@@ -18,22 +18,29 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install and Build
+      - name: Install and Build Web
         run: |
-          # מחפש איפה נמצא ה-package.json
           CONFIG_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$CONFIG_PATH")
           cd "$PROJECT_DIR"
-          
-          # מחיקת הקובץ שגורם לשגיאה ב-Build הסטטי
           find . -name "manifest.webmanifest" -delete || true
-          find . -name "manifest.ts" -delete || true
-
           npm install
           npm run build
-        
-      - name: Upload Static Site
+
+      - name: Build Android APK
+        run: |
+          CONFIG_PATH=$(find . -name package.json -print -quit)
+          cd $(dirname "$CONFIG_PATH")
+          # התקנת כלי המעטפת
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "KidsApp" "com.myapp.kids" --web-dir out
+          npx cap add android
+          npx cap sync
+          # בניית ה-APK בפועל
+          cd android && ./gradlew assembleDebug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: out-folder
-          path: "**/out"
+          name: app-release-apk
+          path: "**/app-debug.apk"
