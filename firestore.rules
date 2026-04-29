@@ -1,0 +1,50 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Settings rules - Allow reading for everyone, write if signed in
+    match /settings/{settingId} {
+      allow read: if true; 
+      allow write: if isSignedIn();
+    }
+
+    // App storage rules
+    match /apps/{appId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /users/{userId}/profile {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/categories/{categoryId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /users/{userId}/bookmarks/{bookmarkId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /publicSearchEngines/{searchEngineId} {
+      allow read: if true;
+    }
+
+    match /users/{userId}/customSearchEngines/{searchEngineId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}
