@@ -1,0 +1,35 @@
+name: Build from ZIP
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          # כאן אנחנו פותחים את הזיפ שהעלית
+          unzip project.zip 
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install and Build
+        run: |
+          # מחפש איפה נמצא ה-package.json וניגש לשם
+          CONFIG_PATH=$(find . -name package.json -print -quit)
+          cd $(dirname "$CONFIG_PATH")
+          npm install
+          npm run build
+        
+      - name: Upload Static Site
+        uses: actions/upload-artifact@v4
+        with:
+          name: out-folder
+          path: "**/out"
