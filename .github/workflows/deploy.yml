@@ -11,9 +11,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Unzip project
-        run: |
-          # כאן אנחנו פותחים את הזיפ שהעלית
-          unzip project.zip 
+        run: unzip project.zip 
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -22,9 +20,15 @@ jobs:
 
       - name: Install and Build
         run: |
-          # מחפש איפה נמצא ה-package.json וניגש לשם
+          # מחפש איפה נמצא ה-package.json
           CONFIG_PATH=$(find . -name package.json -print -quit)
-          cd $(dirname "$CONFIG_PATH")
+          PROJECT_DIR=$(dirname "$CONFIG_PATH")
+          cd "$PROJECT_DIR"
+          
+          # מחיקת הקובץ שגורם לשגיאה ב-Build הסטטי
+          find . -name "manifest.webmanifest" -delete || true
+          find . -name "manifest.ts" -delete || true
+
           npm install
           npm run build
         
