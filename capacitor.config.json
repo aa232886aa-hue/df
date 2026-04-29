@@ -1,0 +1,6 @@
+{
+  "appId": "com.myapp.kids",
+  "appName": "KidsApp",
+  "webDir": "out",
+  "bundledWebRuntime": false
+}
