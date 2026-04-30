@@ -10,9 +10,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Unzip project
-        run: unzip project.zip 
-
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
@@ -24,24 +21,30 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install and Build
+      - name: Unzip and Build
         run: |
+          # 1. פתיחת הזיפ
+          unzip project.zip
+          
+          # 2. איתור תיקיית הפרויקט
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          find . -name "manifest*" -delete || true
+          # 3. בניית ה-Web (בלי למחוק מניפסטים בטעות)
           npm install
           npm run build
           
+          # 4. הקמת המעטפת
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # העתקת הקובץ שיצרת למקום הנכון באנדרואיד
+          # 5. השתלת המניפסט שיצרת (כאן הקסם קורה)
+          # אנחנו מחפשים את הקובץ שהעלית ידנית ומעתיקים אותו לתוך תיקיית האנדרואיד שנוצרה הרגע
           cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # בניית ה-APK
+          # 6. יצירת קובץ בנייה תקין
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
@@ -52,12 +55,6 @@ jobs:
                   minSdkVersion 23
                   targetSdkVersion 35
               }
-              configurations.all {
-                  resolutionStrategy {
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-                  }
-              }
           }
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -65,6 +62,7 @@ jobs:
           }
           EOF
           
+          # 7. בנייה סופית
           cd android && chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
