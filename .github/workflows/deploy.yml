@@ -20,27 +20,24 @@ jobs:
 
       - name: Install and Build
         run: |
-          # מוצא איפה נמצא הקוד האמיתי
           CONFIG_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$CONFIG_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי ובניית ה-HTML
+          # מחיקה של כל מה שקשור למניפסט שעושה שגיאות
+          find . -name "manifest*" -delete || true
+          
           npm install
           npm run build
           
-          # הגדרת המעטפת (Capacitor)
+          # בניית המעטפת לאנדרואיד
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
-          
-          # בניית ה-APK
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          cd android && chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-final-app
+          name: final-android-apk
           path: "**/app-debug.apk"
