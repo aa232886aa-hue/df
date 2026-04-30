@@ -40,10 +40,39 @@ jobs:
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # תיקון השגיאה של ה-SplashScreen: החלפה לעיצוב סטנדרטי
-          sed -i 's/Theme.SplashScreen/Theme.AppCompat.Light.NoActionBar/g' android/app/src/main/AndroidManifest.xml
-          
-          # יצירת קובץ הגדרות עם SDK 35 ומינימום 23
+          # יצירת קובץ Styles בסיסי כדי למנוע את שגיאת ה-Theme
+          mkdir -p android/app/src/main/res/values
+          cat <<EOF > android/app/src/main/res/values/styles.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+              </style>
+          </resources>
+          EOF
+
+          # יצירת AndroidManifest נקי שמשתמש ב-AppTheme שיצרנו
+          cat <<EOF > android/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com">
+              <application
+                  android:label="KidsApp"
+                  android:icon="@mipmap/ic_launcher"
+                  android:theme="@style/AppTheme">
+                  <activity
+                      android:name="com.getcapacitor.BridgeActivity"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+                      android:name="com.myapp.kids.MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # הגדרות Build.gradle
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
@@ -64,17 +93,12 @@ jobs:
               }
           }
           dependencies {
-              implementation fileTree(dir: 'libs', include: ['*.jar'])
               implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'androidx.core:core:1.15.0'
               implementation project(':capacitor-android')
-              implementation project(':capacitor-cordova-android-plugins')
           }
           EOF
           
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          cd android && chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
