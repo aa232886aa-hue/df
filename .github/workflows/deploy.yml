@@ -26,29 +26,29 @@ jobs:
 
       - name: Install and Build
         run: |
-          CONFIG_PATH=$(find . -name package.json -print -quit)
-          PROJECT_DIR=$(dirname "$CONFIG_PATH")
+          # איתור תיקיית הפרויקט
+          ROOT_PATH=$(find . -name package.json -print -quit)
+          PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
+          # ניקוי מוקשים
           find . -name "manifest*" -delete || true
           find . -name "capacitor.config.ts" -delete || true
           
           npm install
           npm run build
           
+          # הגדרת המעטפת
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # הגדרות לתמיכה במכשירים ישנים (אנדרואיד 7 ומעלה)
+          # הגדרות תמיכה לאחור (אנדרואיד 8.1)
           sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
           sed -i 's/targetSdk = .*/targetSdk = 34/' android/variables.gradle
           sed -i 's/compileSdk = .*/compileSdk = 34/' android/variables.gradle
           
-          cd android && chmod +x gradlew && ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-android-apk
-          path: "**/app-debug.apk"
+          # בניית ה-APK עם תיקון הרשאות
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
