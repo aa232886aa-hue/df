@@ -40,7 +40,7 @@ jobs:
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # יצירת קובץ Styles בסיסי כדי למנוע את שגיאת ה-Theme
+          # יצירת קובץ Styles תקין
           mkdir -p android/app/src/main/res/values
           cat <<EOF > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -50,18 +50,17 @@ jobs:
           </resources>
           EOF
 
-          # יצירת AndroidManifest נקי שמשתמש ב-AppTheme שיצרנו
+          # תיקון ה-Manifest (הסרתי את הכפילות)
           cat <<EOF > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com">
+          <manifest xmlns:android="http://android.com" xmlns:tools="http://tools.com">
               <application
                   android:label="KidsApp"
-                  android:icon="@mipmap/ic_launcher"
-                  android:theme="@style/AppTheme">
+                  android:theme="@style/AppTheme"
+                  tools:replace="android:theme">
                   <activity
                       android:name="com.getcapacitor.BridgeActivity"
                       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
-                      android:name="com.myapp.kids.MainActivity"
                       android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -103,5 +102,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: final-kids-app
+          name: my-final-kids-app
           path: "**/app-debug.apk"
