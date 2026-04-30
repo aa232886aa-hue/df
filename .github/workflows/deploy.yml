@@ -25,19 +25,20 @@ jobs:
         run: |
           unzip project.zip
           
-          # איתור תיקיית הפרויקט וכניסה אליה
+          # איתור תיקיית הפרויקט
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי המניפסט (שגורם לשגיאה בלוג ששלחת)
+          # ניקוי קבצים מתנגשים (כולל המניפסט והקובץ שגרם לשגיאה עכשיו)
           find . -name "manifest.*" -delete || true
+          rm -f capacitor.config.ts || true
           
           # בניית ה-Web
           npm install
           npm run build
           
-          # הקמת המעטפת
+          # הקמת המעטפת (כאן זה נתקע קודם)
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
