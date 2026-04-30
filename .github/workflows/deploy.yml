@@ -40,16 +40,16 @@ jobs:
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # תיקון כפילויות Kotlin ע"י החלפת קובץ ההגדרות של האפליקציה
+          # יצירת קובץ הגדרות עם SDK 35 ותיקון כפילויות
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
               namespace "com.myapp.kids"
-              compileSdk 34
+              compileSdk 35
               defaultConfig {
                   applicationId "com.myapp.kids"
                   minSdkVersion 22
-                  targetSdkVersion 34
+                  targetSdkVersion 35
                   versionCode 1
                   versionName "1.0"
               }
@@ -63,6 +63,7 @@ jobs:
           dependencies {
               implementation fileTree(dir: 'libs', include: ['*.jar'])
               implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'androidx.core:core:1.15.0'
               implementation project(':capacitor-android')
               implementation project(':capacitor-cordova-android-plugins')
           }
@@ -75,5 +76,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-kids-app-apk
+          name: final-kids-app
           path: "**/app-debug.apk"
