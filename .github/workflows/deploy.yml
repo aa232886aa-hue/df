@@ -24,8 +24,9 @@ jobs:
           PROJECT_DIR=$(dirname "$CONFIG_PATH")
           cd "$PROJECT_DIR"
           
-          # מחיקה של כל מה שקשור למניפסט שעושה שגיאות
+          # מחיקת קבצים שמתנגשים עם הבנייה
           find . -name "manifest*" -delete || true
+          find . -name "capacitor.config.ts" -delete || true
           
           npm install
           npm run build
