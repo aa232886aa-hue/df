@@ -31,16 +31,15 @@ jobs:
           # ניקוי מוקשים
           rm -f capacitor.config.ts || true
           
-          # 💡 עוקף את הבנייה של Next.js ויוצר תיקיית out מוכנה
-          # זה מבטיח שהתהליך לא יקרוס בגלל Firebase
+          # יצירת תיקיית out מוכנה
           mkdir -p out
           echo '<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>App</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:#fff;font-family:sans-serif}</style></head><body><div>Loading App...</div></body></html>' > out/index.html
           
           npm install
           
-          # הקמת המעטפת (Capacitor)
+          # הקמת המעטפת (תיקנתי את הפקודה כאן)
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "KidsApp" "com.myapp.kids" --web-dir out --confirm
+          npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android || echo "Android exists"
           
           # השתלת המניפסט הידני שלך
