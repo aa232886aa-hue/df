@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://android.com" xmlns:tools="http://tools.com">
+    <application android:label="KidsApp" android:theme="@style/Theme.AppCompat.Light.NoActionBar" tools:replace="android:theme">
+        <activity android:name="com.getcapacitor.BridgeActivity" android:exported="true" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
