@@ -26,26 +26,34 @@ jobs:
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
-          cd "$PROJECT_DIR"
           
-          # ניקוי מוקשים
+          # שמירת נתיב המניפסט שהעלית ידנית (הוא נמצא בשורש המאגר)
+          MANUAL_MANIFEST=$(pwd)/AndroidManifest.xml
+          
+          cd "$PROJECT_DIR"
           rm -f capacitor.config.ts || true
           
-          # יצירת תיקיית out מוכנה
+          # יצירת תיקיית out
           mkdir -p out
-          echo '<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>App</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#000;color:#fff;font-family:sans-serif}</style></head><body><div>Loading App...</div></body></html>' > out/index.html
+          echo '<html><body><h1>App Loading</h1></body></html>' > out/index.html
           
           npm install
+          npm run build || true
           
-          # הקמת המעטפת (תיקנתי את הפקודה כאן)
+          # הקמת המעטפת
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "KidsApp" "com.myapp.kids" --web-dir out
-          npx cap add android || echo "Android exists"
+          npx cap init "KidsApp" "com.myapp.kids" --web-dir out --confirm
+          npx cap add android || true
           
-          # השתלת המניפסט הידני שלך
-          cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml || echo "No manual manifest"
+          # העתקה חכמה של המניפסט למקום הנכון
+          if [ -f "$MANUAL_MANIFEST" ]; then
+            cp "$MANUAL_MANIFEST" android/app/src/main/AndroidManifest.xml
+            echo "Manifest injected successfully"
+          else
+            echo "Warning: Manual manifest not found at $MANUAL_MANIFEST"
+          fi
           
-          # יצירת קובץ בנייה של אנדרואיד
+          # יצירת קובץ בנייה
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
@@ -55,14 +63,6 @@ jobs:
                   applicationId "com.myapp.kids"
                   minSdkVersion 24
                   targetSdkVersion 35
-                  versionCode 1
-                  versionName "1.0"
-              }
-              configurations.all {
-                  resolutionStrategy {
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-                  }
               }
           }
           dependencies {
@@ -71,7 +71,6 @@ jobs:
           }
           EOF
           
-          # בניית ה-APK
           cd android && chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
