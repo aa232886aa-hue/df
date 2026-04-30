@@ -40,7 +40,10 @@ jobs:
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # יצירת קובץ הגדרות עם SDK 35 ומינימום 23 (מתאים ל-8.1 ומעלה)
+          # תיקון השגיאה של ה-SplashScreen: החלפה לעיצוב סטנדרטי
+          sed -i 's/Theme.SplashScreen/Theme.AppCompat.Light.NoActionBar/g' android/app/src/main/AndroidManifest.xml
+          
+          # יצירת קובץ הגדרות עם SDK 35 ומינימום 23
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
