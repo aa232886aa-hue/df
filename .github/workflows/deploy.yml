@@ -40,38 +40,24 @@ jobs:
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # יצירת קובץ Styles תקין
+          # יצירת קובץ Styles
           mkdir -p android/app/src/main/res/values
-          cat <<EOF > android/app/src/main/res/values/styles.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-              </style>
-          </resources>
-          EOF
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar"></style></resources>' > android/app/src/main/res/values/styles.xml
 
-          # תיקון ה-Manifest (הסרתי את הכפילות)
-          cat <<EOF > android/app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com" xmlns:tools="http://tools.com">
-              <application
-                  android:label="KidsApp"
-                  android:theme="@style/AppTheme"
-                  tools:replace="android:theme">
-                  <activity
-                      android:name="com.getcapacitor.BridgeActivity"
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
+          # יצירת Manifest תקין בשיטה של שורה-שורה למניעת שגיאות תווים
+          echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
+          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">' >> android/app/src/main/AndroidManifest.xml
+          echo '  <application android:label="KidsApp" android:theme="@style/AppTheme" tools:replace="android:theme">' >> android/app/src/main/AndroidManifest.xml
+          echo '    <activity android:name="com.getcapacitor.BridgeActivity" android:exported="true" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode">' >> android/app/src/main/AndroidManifest.xml
+          echo '      <intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <action android:name="android.intent.action.MAIN" />' >> android/app/src/main/AndroidManifest.xml
+          echo '        <category android:name="android.intent.category.LAUNCHER" />' >> android/app/src/main/AndroidManifest.xml
+          echo '      </intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '    </activity>' >> android/app/src/main/AndroidManifest.xml
+          echo '  </application>' >> android/app/src/main/AndroidManifest.xml
+          echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-          # הגדרות Build.gradle
+          # בניית ה-APK
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
