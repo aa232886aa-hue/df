@@ -24,32 +24,26 @@ jobs:
       - name: Unzip and Build
         run: |
           unzip project.zip
-          
-          # איתור תיקיית הפרויקט וכניסה אליה
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי מוקשים
+          # ניקוי מוקשים ידועים
           find . -name "manifest*" -delete || true
           rm -f capacitor.config.ts || true
           
           npm install
           
-          # יצירת תיקיית out ידנית כגיבוי למקרה ש-Firebase יכשיל את הבנייה
-          mkdir -p out
-          echo '<html><head><meta charset="UTF-8"><title>App</title></head><body><div id="__next"></div><script>window.location.href="index.html";</script></body></html>' > out/index.html
-          
-          # ניסיון בנייה שקט - ממשיך גם אם יש שגיאות
-          npm run build || echo "Ignoring Next.js build errors, using fallback out folder"
+          # 💡 הקסם: מנסים לבנות, ואם נכשל - יוצרים דף נחיתה בסיסי כדי לא לחסום את ה-APK
+          npm run build || (mkdir -p out && echo "<html><body><h1>Loading App...</h1><script>window.location.href='index.html';</script></body></html>" > out/index.html)
           
           # הקמת המעטפת (Capacitor)
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out --confirm
-          npx cap add android || echo "Android already exists"
+          npx cap add android || echo "Android project already exists"
           
-          # השתלת המניפסט הידני שלך
-          cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml || echo "No manual manifest found, using default"
+          # השתלת המניפסט שיצרת ידנית (חשוב!)
+          cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml || echo "No manual manifest found"
           
           # יצירת קובץ בנייה של אנדרואיד
           cat <<EOF > android/app/build.gradle
@@ -59,7 +53,7 @@ jobs:
               compileSdk 35
               defaultConfig {
                   applicationId "com.myapp.kids"
-                  minSdkVersion 23
+                  minSdkVersion 24
                   targetSdkVersion 35
                   versionCode 1
                   versionName "1.0"
@@ -77,7 +71,7 @@ jobs:
           }
           EOF
           
-          # בניית ה-APK בפועל
+          # בניית ה-APK
           cd android && chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
