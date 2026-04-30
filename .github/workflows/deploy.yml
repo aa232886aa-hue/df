@@ -23,28 +23,29 @@ jobs:
 
       - name: Unzip and Build
         run: |
-          # 1. פתיחת הזיפ
           unzip project.zip
           
-          # 2. איתור תיקיית הפרויקט
+          # איתור תיקיית הפרויקט וכניסה אליה
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # 3. בניית ה-Web (בלי למחוק מניפסטים בטעות)
+          # ניקוי המניפסט (שגורם לשגיאה בלוג ששלחת)
+          find . -name "manifest.*" -delete || true
+          
+          # בניית ה-Web
           npm install
           npm run build
           
-          # 4. הקמת המעטפת
+          # הקמת המעטפת
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # 5. השתלת המניפסט שיצרת (כאן הקסם קורה)
-          # אנחנו מחפשים את הקובץ שהעלית ידנית ומעתיקים אותו לתוך תיקיית האנדרואיד שנוצרה הרגע
+          # השתלת המניפסט הידני שלך
           cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml
           
-          # 6. יצירת קובץ בנייה תקין
+          # יצירת קובץ בנייה
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
@@ -62,7 +63,6 @@ jobs:
           }
           EOF
           
-          # 7. בנייה סופית
           cd android && chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
