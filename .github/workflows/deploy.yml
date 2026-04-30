@@ -13,11 +13,11 @@ jobs:
       - name: Unzip project
         run: unzip project.zip 
 
-      - name: Set up Java 17 # ננסה גרסה 17 שהיא הכי נפוצה לאנדרואיד 8.1
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21' # חזרנו ל-21 כי זה מה שהמערכת דורשת כדי לא לקרוס
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -30,22 +30,28 @@ jobs:
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי מוקשים
           find . -name "manifest*" -delete || true
           find . -name "capacitor.config.ts" -delete || true
           
           npm install
           npm run build
           
-          # התקנה נקייה של המעטפת
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # הגדרות תאימות למכשירים ישנים
+          # הגדרות קריטיות לתמיכה באנדרואיד 8.1 (גרסה 22 ומעלה)
+          # ובנייה עם Java 21 (גרסה 17/21 של bytecode)
           sed -i 's/minSdkVersion = .*/minSdkVersion = 22/' android/variables.gradle
+          sed -i 's/compileSdk = .*/compileSdk = 34/' android/variables.gradle
+          sed -i 's/targetSdk = .*/targetSdk = 34/' android/variables.gradle
           
           cd android
           chmod +x gradlew
-          ./gradlew clean # פקודת ניקוי קריטית
           ./gradlew assembleDebug
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-kids-app-apk
+          path: "**/app-debug.apk"
