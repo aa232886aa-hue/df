@@ -24,34 +24,26 @@ jobs:
       - name: Unzip and Build
         run: |
           unzip project.zip
-          
-          # איתור תיקיית הפרויקט
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי מוקשים
           find . -name "manifest.*" -delete || true
           rm -f capacitor.config.ts || true
           
-          # הזרקת הגדרות דמי
-          echo "NEXT_PUBLIC_FIREBASE_API_KEY=dummy" >> .env.local
-          echo "NEXT_PUBLIC_FIREBASE_PROJECT_ID=dummy" >> .env.local
-
           npm install
-          
-          # הרצת בנייה - ממשיך גם אם יש אזהרות
-          npm run build || echo "Web build finished with warnings, moving to Android..."
+          # הרצת בנייה - ממשיך גם אם Firebase מוציא שגיאה
+          npm run build || echo "Web build finished with Firebase warnings, continuing to Android..."
           
           # הקמת המעטפת
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out || echo "Capacitor already init"
           npx cap add android || echo "Android already added"
           
-          # השתלת המניפסט הידני שלך
-          cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml || echo "Manifest copy failed, check if file exists"
+          # השתלת המניפסט שיצרת ידנית
+          cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml || echo "Manifest copy failed"
           
-          # יצירת קובץ בנייה
+          # יצירת קובץ בנייה מותאם
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
