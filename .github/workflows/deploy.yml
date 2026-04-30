@@ -16,7 +16,7 @@ jobs:
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu' # גרסה מומלצת לאנדרואיד
+          distribution: 'zulu'
           java-version: '21'
 
       - name: Set up Node.js
@@ -30,17 +30,21 @@ jobs:
           PROJECT_DIR=$(dirname "$CONFIG_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי קבצים מתנגשים
           find . -name "manifest*" -delete || true
           find . -name "capacitor.config.ts" -delete || true
           
           npm install
           npm run build
           
-          # בניית אנדרואיד
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
+          
+          # הגדרות לתמיכה במכשירים ישנים (אנדרואיד 7 ומעלה)
+          sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
+          sed -i 's/targetSdk = .*/targetSdk = 34/' android/variables.gradle
+          sed -i 's/compileSdk = .*/compileSdk = 34/' android/variables.gradle
+          
           cd android && chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
