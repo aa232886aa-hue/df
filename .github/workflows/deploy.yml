@@ -31,8 +31,6 @@ jobs:
           cd "$PROJECT_DIR"
           
           find . -name "manifest*" -delete || true
-          find . -name "capacitor.config.ts" -delete || true
-          
           npm install
           npm run build
           
@@ -40,23 +38,9 @@ jobs:
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # יצירת קובץ Styles
-          mkdir -p android/app/src/main/res/values
-          echo '<?xml version="1.0" encoding="utf-8"?><resources><style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar"></style></resources>' > android/app/src/main/res/values/styles.xml
-
-          # יצירת Manifest תקין בשיטה של שורה-שורה למניעת שגיאות תווים
-          echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
-          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">' >> android/app/src/main/AndroidManifest.xml
-          echo '  <application android:label="KidsApp" android:theme="@style/AppTheme" tools:replace="android:theme">' >> android/app/src/main/AndroidManifest.xml
-          echo '    <activity android:name="com.getcapacitor.BridgeActivity" android:exported="true" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode">' >> android/app/src/main/AndroidManifest.xml
-          echo '      <intent-filter>' >> android/app/src/main/AndroidManifest.xml
-          echo '        <action android:name="android.intent.action.MAIN" />' >> android/app/src/main/AndroidManifest.xml
-          echo '        <category android:name="android.intent.category.LAUNCHER" />' >> android/app/src/main/AndroidManifest.xml
-          echo '      </intent-filter>' >> android/app/src/main/AndroidManifest.xml
-          echo '    </activity>' >> android/app/src/main/AndroidManifest.xml
-          echo '  </application>' >> android/app/src/main/AndroidManifest.xml
-          echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
-
+          # העתקת הקובץ שיצרת למקום הנכון באנדרואיד
+          cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          
           # בניית ה-APK
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
@@ -67,8 +51,6 @@ jobs:
                   applicationId "com.myapp.kids"
                   minSdkVersion 23
                   targetSdkVersion 35
-                  versionCode 1
-                  versionName "1.0"
               }
               configurations.all {
                   resolutionStrategy {
@@ -88,5 +70,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-final-kids-app
+          name: final-kids-app
           path: "**/app-debug.apk"
