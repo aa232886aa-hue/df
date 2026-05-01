@@ -21,55 +21,32 @@ jobs:
         with:
           node-version: 20
 
-      - name: Final Build Attempt
+      - name: Final Build
         run: |
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי
+          # ניקוי יסודי
           rm -rf android ios node_modules out capacitor.config.*
           mkdir -p out
-          echo '<html><body>App Ready</body></html>' > out/index.html
+          echo '<html><body><h1>App Ready</h1></body></html>' > out/index.html
           
-          # התקנה
+          # התקנת המערכת
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          echo '{"appId":"com.myapp.kids","appName":"KidsApp","webDir":"out"}' > capacitor.config.json
+          npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # 💡 יצירת מניפסט תקין בשיטה של "שורה שורה" כדי למנוע שגיאות תווים
-          MANIFEST=android/app/src/main/AndroidManifest.xml
-          echo '<?xml version="1.0" encoding="utf-8"?>' > $MANIFEST
-          echo '<manifest xmlns:android="http://android.com">' >> $MANIFEST
-          echo '  <application android:label="KidsApp" android:theme="@style/Theme.AppCompat.Light.NoActionBar">' >> $MANIFEST
-          echo '    <activity android:name="com.getcapacitor.BridgeActivity" android:exported="true">' >> $MANIFEST
-          echo '      <intent-filter>' >> $MANIFEST
-          echo '        <action android:name="android.intent.action.MAIN" />' >> $MANIFEST
-          echo '        <category android:name="android.intent.category.LAUNCHER" />' >> $MANIFEST
-          echo '      </intent-filter>' >> $MANIFEST
-          echo '    </activity>' >> $MANIFEST
-          echo '  </application>' >> $MANIFEST
-          echo '</manifest>' >> $MANIFEST
-
-          # יצירת קובץ בנייה
-          cat <<EOF > android/app/build.gradle
-          apply plugin: 'com.android.application'
-          android {
-              namespace "com.myapp.kids"
-              compileSdk 35
-              defaultConfig {
-                  applicationId "com.myapp.kids"
-                  minSdkVersion 24
-                  targetSdkVersion 35
-              }
-          }
-          dependencies {
-              implementation project(':capacitor-android')
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-          }
-          EOF
+          # 💡 במקום להחליף את המניפסט, אנחנו רק משנים את העיצוב לסטנדרטי
+          # זה פותר את השגיאה של ה-SplashScreen בלי לשבור את הקובץ
+          sed -i 's/Theme.SplashScreen/Theme.AppCompat.Light.NoActionBar/g' android/app/src/main/AndroidManifest.xml
           
+          # עדכון גרסאות אנדרואיד בדרך הבטוחה
+          sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
+          sed -i 's/targetSdkVersion = .*/targetSdkVersion = 34/' android/variables.gradle
+          
+          # בנייה בלי "הזרקות" קוד חיצוניות
           cd android && chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
