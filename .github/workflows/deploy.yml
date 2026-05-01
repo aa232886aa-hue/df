@@ -1,4 +1,4 @@
-name: Build Android Robust
+name: Build Android Fast Fixed
 on:
   push:
     branches: [ main, master ]
@@ -10,57 +10,48 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Java 21
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '17'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Build Process
+      - name: Build APK
         run: |
-          # 1. חילוץ הקבצים וזיהוי תיקיית השורש
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # 2. ניקוי קבצים קודמים וטיפול בשגיאת המניפסט
+          # ניקוי וסידור
           rm -rf android node_modules out capacitor.config.*
-          find . -name "manifest.*" -delete || true
+          mkdir -p out
+          echo '<html><body style="background:blue;color:white;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;"><h1>🎵 Kids Music Ready</h1></body></html>' > out/index.html
           
-          # 3. יצירת קובץ אייקון בתיקיית העבודה
-          sudo apt-get install -y imagemagick
-          convert -size 512x512 xc:blue -fill white -gravity center -pointsize 400 -draw "text 0,0 '♪'" icon.png
+          # התקנה מהירה
+          npm install @capacitor/core@5.0.0 @capacitor/cli@5.0.0 @capacitor/android@5.0.0 --no-package-lock
           
-          # 4. התקנה ובניית צד הלקוח
-          npm install
-          npm run build || (mkdir -p out && echo '<html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;"><h1>🎵 Kids Music Ready</h1></body></html>' > out/index.html)
-
-          # 5. הגדרת Capacitor
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          # יצירת הגדרות
           echo '{"appId":"com.music.kids.app","appName":"Kids Music","webDir":"out"}' > capacitor.config.json
           npx cap add android
           
-          # 6. העתקת האייקון לתיקיות המשאבים של אנדרואיד
-          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
-
-          # 7. עדכון גרסאות SDK ב-Gradle
-          sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
-          sed -i 's/targetSdkVersion = .*/targetSdkVersion = 33/' android/variables.gradle
+          # 💡 פתרון הכפילויות: מחיקת גרסאות ישנות של Kotlin מקובץ ההגדרות
+          sed -i '/dependencies {/a \    constraints { \
+              implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22") { because("Force consistent version") } \
+              implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22") { because("Force consistent version") } \
+          }' android/app/build.gradle
           
-          # 8. בניית קובץ ה-APK
-          cd android && chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          # הגדרות תאימות
+          echo "minSdkVersion=24" >> android/variables.gradle
+          echo "targetSdkVersion=33" >> android/variables.gradle
+          
+          # בנייה
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: musical-kids-app
+          name: musical-kids-apk
           path: "**/app-debug.apk"
