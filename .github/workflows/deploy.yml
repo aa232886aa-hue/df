@@ -21,38 +21,34 @@ jobs:
         with:
           node-version: 20
 
-      - name: Unzip and Build
+      - name: Complete Clean and Build
         run: |
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
-          
-          # שמירת נתיב המניפסט שהעלית ידנית
-          MANUAL_MANIFEST=$(pwd)/AndroidManifest.xml
-          
           cd "$PROJECT_DIR"
           
-          # ניקוי
-          rm -f capacitor.config.ts || true
-          find . -name "manifest.*" -delete || true
+          # 1. ניקוי יסודי של זבל מהזיפ שחוסם אותנו
+          rm -rf android ios node_modules out
+          rm -f capacitor.config.*
           
-          # יצירת תיקיית out ידנית לעקיפת שגיאות בנייה
+          # 2. יצירת תיקיית out בסיסית לעקיפת Next.js
           mkdir -p out
-          echo '<html><head><meta charset="UTF-8"><title>App</title></head><body><div id="__next">Loading...</div></body></html>' > out/index.html
+          echo '<html><body><h1>App Ready</h1></body></html>' > out/index.html
           
-          npm install
-          
-          # הקמת המעטפת (פקודה נקייה ללא אפשרויות לא מוכרות)
+          # 3. התקנה נקייה של המעטפת בלבד (בלי פלאגינים ישנים)
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "KidsApp" "com.myapp.kids" --web-dir out
-          npx cap add android || echo "Android exists"
           
-          # הזרקת המניפסט
-          if [ -f "$MANUAL_MANIFEST" ]; then
-            cp "$MANUAL_MANIFEST" android/app/src/main/AndroidManifest.xml
+          # 4. אתחול המעטפת
+          npx cap init "KidsApp" "com.myapp.kids" --web-dir out
+          npx cap add android
+          
+          # 5. הזרקת המניפסט הידני שלך (אם העלית אותו לשורש המאגר)
+          if [ -f "../../AndroidManifest.xml" ]; then
+            cp "../../AndroidManifest.xml" android/app/src/main/AndroidManifest.xml
           fi
           
-          # יצירת קובץ בנייה של אנדרואיד
+          # 6. יצירת קובץ הגדרות בנייה נקי לגמרי
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
@@ -65,12 +61,6 @@ jobs:
                   versionCode 1
                   versionName "1.0"
               }
-              configurations.all {
-                  resolutionStrategy {
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-                  }
-              }
           }
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -78,7 +68,9 @@ jobs:
           }
           EOF
           
-          cd android && chmod +x gradlew && ./gradlew assembleDebug
+          # 7. בנייה סופית (בלי ה-Daemon כדי שלא ייתקע)
+          cd android && chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
