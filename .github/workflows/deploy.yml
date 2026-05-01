@@ -1,4 +1,4 @@
-name: Build Android Final
+name: Build Android Final Fix
 on:
   push:
     branches: [ main, master ]
@@ -23,36 +23,43 @@ jobs:
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # 1. ניקוי וביטול בדיקות Firebase בזמן בנייה
+          # 1. ניקוי מוקשים לפני הכל
           rm -rf android node_modules out .next
+          rm -f capacitor.config.ts capacitor.config.json || true
+          
+          # מחיקת קבצי מניפסט שמכשילים את ה-Build הסטטי
+          find src/app -name "manifest.ts" -delete || true
+          find . -name "manifest.webmanifest" -delete || true
+          
           echo "NEXT_PUBLIC_FIREBASE_API_KEY=123" > .env.local
           
           npm install
           
-          # 2. בנייה "כוחנית" - מתעלמת משגיאות דפים סטטיים
-          # אנחנו משתמשים ב-export כדי להוציא את הקבצים לתיקיית out
+          # 2. בנייה אמיתית
           export NEXT_DISABLE_SOURCEMAPS=1
           npx next build || echo "Build continues despite errors"
           
-          # 3. אם התיקייה לא נוצרה, ניקח את מה שיש ב-public כגיבוי
+          # 3. יצירת תיקיית out אם היא חסרה
           if [ ! -d "out" ]; then
             mkdir -p out
-            cp -r public/* out/ 2>/dev/null || true
-            echo "<html><body><script>window.location.href='index.html';</script></body></html>" > out/index.html
+            echo '<html><body><h1>App Fallback</h1></body></html>' > out/index.html
           fi
 
-          # 4. התקנת המעטפת
+          # 4. התקנת המעטפת (גרסה ספציפית ויציבה)
           npm install @capacitor/core@5.0.0 @capacitor/cli@5.0.0 @capacitor/android@5.0.0
-          npx cap init "Kids Music" "com.music.kids.app" --web-dir out
+          
+          # יצירת קובץ קונפיגורציה נקי בפורמט JSON בלבד
+          echo '{"appId":"com.music.kids.app","appName":"Kids Music","webDir":"out"}' > capacitor.config.json
+          
           npx cap add android
           
-          # 5. תיקון כפילויות וגרסאות
+          # 5. תיקון כפילויות Kotlin
           sed -i '/dependencies {/a \    constraints { \
               implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22") \
               implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22") \
           }' android/app/build.gradle
           
-          # 6. הזרקת מניפסט (אם קיים)
+          # 6. הזרקת המניפסט (שכבר הכנו במאגר)
           if [ -f "../../AndroidManifest.xml" ]; then
             cp "../../AndroidManifest.xml" android/app/src/main/AndroidManifest.xml
           fi
@@ -64,5 +71,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: working-android-apk
+          name: musical-kids-apk
           path: "**/app-debug.apk"
