@@ -21,42 +21,53 @@ jobs:
         with:
           node-version: 20
 
-      - name: Clean Build and Assemble
+      - name: Build and Fix Duplicates
         run: |
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי מוחלט של כל זכר להגדרות קודמות
-          rm -rf android node_modules out capacitor.config.* package-lock.json
-          
-          # יצירת תיקיית תוכן בסיסית
+          # ניקוי סביבה
+          rm -rf android ios node_modules out capacitor.config.*
           mkdir -p out
-          echo '<html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;"><h1>האפליקציה מוכנה</h1></body></html>' > out/index.html
+          echo '<html><body><h1>App Ready</h1></body></html>' > out/index.html
           
-          # התקנה מינימלית של ליבת המעטפת בלבד
+          # התקנה
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          
-          # יצירת הגדרות מעטפת נקיות בפורמט JSON
-          echo '{"appId":"com.myapp.kids","appName":"KidsApp","webDir":"out","bundledWebRuntime":false}' > capacitor.config.json
-          
-          # הוספת פלטפורמת אנדרואיד
+          echo '{"appId":"com.myapp.kids","appName":"KidsApp","webDir":"out"}' > capacitor.config.json
           npx cap add android
           
-          # תיקון גרסאות והסרת תלויות פלאגינים בעייתיות מקובץ ההגדרות
-          sed -i 's/implementation project(":capacitor-cordova-android-plugins")//g' android/app/build.gradle
-          sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
-          
-          # הזרקת המניפסט הידני שלך
-          if [ -f "../../AndroidManifest.xml" ]; then
-            cp "../../AndroidManifest.xml" android/app/src/main/AndroidManifest.xml
-          fi
-          
-          # בנייה ישירה
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          # 💡 התיקון לכפילויות (Duplicate Classes)
+          # אנחנו יוצרים קובץ הגדרות שאומר למערכת להתעלם מכפילויות של Kotlin
+          cat <<EOF > android/app/build.gradle
+          apply plugin: 'com.android.application'
+          android {
+              namespace "com.myapp.kids"
+              compileSdk 35
+              defaultConfig {
+                  applicationId "com.myapp.kids"
+                  minSdkVersion 24
+                  targetSdkVersion 35
+                  versionCode 1
+                  versionName "1.0"
+              }
+              configurations.all {
+                  resolutionStrategy {
+                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+                  }
+              }
+          }
+          dependencies {
+              implementation project(':capacitor-android')
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          EOF
+
+          # בנייה סופית
+          cd android && chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
