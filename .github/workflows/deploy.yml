@@ -21,39 +21,42 @@ jobs:
         with:
           node-version: 20
 
-      - name: Final Android Build
+      - name: Clean Build and Assemble
         run: |
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי מוחלט
-          rm -rf android ios node_modules out
-          rm -f capacitor.config.*
+          # ניקוי מוחלט של כל זכר להגדרות קודמות
+          rm -rf android node_modules out capacitor.config.* package-lock.json
           
-          # יצירת out
+          # יצירת תיקיית תוכן בסיסית
           mkdir -p out
-          echo '<html><head><meta charset="UTF-8"></head><body><h1>App Loaded</h1></body></html>' > out/index.html
+          echo '<html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;"><h1>האפליקציה מוכנה</h1></body></html>' > out/index.html
           
-          # התקנה נקייה
+          # התקנה מינימלית של ליבת המעטפת בלבד
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "KidsApp" "com.myapp.kids" --web-dir out
+          
+          # יצירת הגדרות מעטפת נקיות בפורמט JSON
+          echo '{"appId":"com.myapp.kids","appName":"KidsApp","webDir":"out","bundledWebRuntime":false}' > capacitor.config.json
+          
+          # הוספת פלטפורמת אנדרואיד
           npx cap add android
+          
+          # תיקון גרסאות והסרת תלויות פלאגינים בעייתיות מקובץ ההגדרות
+          sed -i 's/implementation project(":capacitor-cordova-android-plugins")//g' android/app/build.gradle
+          sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
           
           # הזרקת המניפסט הידני שלך
           if [ -f "../../AndroidManifest.xml" ]; then
             cp "../../AndroidManifest.xml" android/app/src/main/AndroidManifest.xml
           fi
           
-          # שינוי הגדרות גרסה בתוך הקובץ הקיים (במקום להחליף אותו)
-          sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
-          sed -i 's/targetSdkVersion = .*/targetSdkVersion = 34/' android/variables.gradle
-          sed -i 's/compileSdkVersion = .*/compileSdkVersion = 34/' android/variables.gradle
-          
-          # בנייה
-          cd android && chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          # בנייה ישירה
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
