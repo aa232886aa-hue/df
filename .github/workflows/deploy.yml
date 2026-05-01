@@ -21,11 +21,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build Process
+      - name: Final Build Attempt
         run: |
-          # שמירת הנתיב של המניפסט בשורש המאגר
-          ROOT_DIR=$(pwd)
-          
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
@@ -33,25 +30,28 @@ jobs:
           
           # ניקוי
           rm -rf android ios node_modules out capacitor.config.*
-          
-          # יצירת out
           mkdir -p out
-          echo '<html><body><h1>App Ready</h1></body></html>' > out/index.html
+          echo '<html><body>App Ready</body></html>' > out/index.html
           
           # התקנה
           npm install @capacitor/core @capacitor/cli @capacitor/android
           echo '{"appId":"com.myapp.kids","appName":"KidsApp","webDir":"out"}' > capacitor.config.json
           npx cap add android
           
-          # 💡 תיקון הנתיב: העתקה מהשורש המקורי של המאגר
-          if [ -f "$ROOT_DIR/AndroidManifest.xml" ]; then
-            cp "$ROOT_DIR/AndroidManifest.xml" android/app/src/main/AndroidManifest.xml
-            echo "Manifest injected successfully from root"
-          else
-            echo "Error: AndroidManifest.xml not found in root!"
-            exit 1
-          fi
-          
+          # 💡 יצירת מניפסט תקין בשיטה של "שורה שורה" כדי למנוע שגיאות תווים
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          echo '<?xml version="1.0" encoding="utf-8"?>' > $MANIFEST
+          echo '<manifest xmlns:android="http://android.com">' >> $MANIFEST
+          echo '  <application android:label="KidsApp" android:theme="@style/Theme.AppCompat.Light.NoActionBar">' >> $MANIFEST
+          echo '    <activity android:name="com.getcapacitor.BridgeActivity" android:exported="true">' >> $MANIFEST
+          echo '      <intent-filter>' >> $MANIFEST
+          echo '        <action android:name="android.intent.action.MAIN" />' >> $MANIFEST
+          echo '        <category android:name="android.intent.category.LAUNCHER" />' >> $MANIFEST
+          echo '      </intent-filter>' >> $MANIFEST
+          echo '    </activity>' >> $MANIFEST
+          echo '  </application>' >> $MANIFEST
+          echo '</manifest>' >> $MANIFEST
+
           # יצירת קובץ בנייה
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
@@ -62,12 +62,6 @@ jobs:
                   applicationId "com.myapp.kids"
                   minSdkVersion 24
                   targetSdkVersion 35
-              }
-              configurations.all {
-                  resolutionStrategy {
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-                      exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
-                  }
               }
           }
           dependencies {
