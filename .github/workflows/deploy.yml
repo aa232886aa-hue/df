@@ -21,27 +21,38 @@ jobs:
         with:
           node-version: 20
 
-      - name: Final Android Build
+      - name: Build Process
         run: |
+          # שמירת הנתיב של המניפסט בשורש המאגר
+          ROOT_DIR=$(pwd)
+          
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי וסידור תיקיית out
-          rm -rf android node_modules out
+          # ניקוי
+          rm -rf android ios node_modules out capacitor.config.*
+          
+          # יצירת out
           mkdir -p out
           echo '<html><body><h1>App Ready</h1></body></html>' > out/index.html
           
-          # התקנת המעטפת
+          # התקנה
           npm install @capacitor/core @capacitor/cli @capacitor/android
           echo '{"appId":"com.myapp.kids","appName":"KidsApp","webDir":"out"}' > capacitor.config.json
           npx cap add android
           
-          # העתקת המניפסט שהכנת בשלב 1
-          cp ../../AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          # 💡 תיקון הנתיב: העתקה מהשורש המקורי של המאגר
+          if [ -f "$ROOT_DIR/AndroidManifest.xml" ]; then
+            cp "$ROOT_DIR/AndroidManifest.xml" android/app/src/main/AndroidManifest.xml
+            echo "Manifest injected successfully from root"
+          else
+            echo "Error: AndroidManifest.xml not found in root!"
+            exit 1
+          fi
           
-          # יצירת קובץ בנייה Gradle פשוט ותקין
+          # יצירת קובץ בנייה
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
@@ -51,8 +62,6 @@ jobs:
                   applicationId "com.myapp.kids"
                   minSdkVersion 24
                   targetSdkVersion 35
-                  versionCode 1
-                  versionName "1.0"
               }
               configurations.all {
                   resolutionStrategy {
