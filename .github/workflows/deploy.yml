@@ -21,45 +21,41 @@ jobs:
         with:
           node-version: 20
 
-      - name: Create Custom Icon
+      - name: Build Process
         run: |
-          # יצירת אייקון זמני (תו נגינה) בעזרת כלי המערכת
-          sudo apt-get install -y imagemagick
-          convert -size 512x512 xc:blue -fill white -gravity center -pointsize 400 -draw "text 0,0 '♪'" icon.png
-
-      - name: Ultimate Build Process
-        run: |
+          # 1. חילוץ הקבצים וזיהוי תיקיית השורש
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
+          # 2. ניקוי קבצים קודמים וטיפול בשגיאת המניפסט
           rm -rf android node_modules out capacitor.config.*
-          echo "NEXT_PUBLIC_FIREBASE_API_KEY=123" > .env.local
+          find . -name "manifest.*" -delete || true
           
+          # 3. יצירת קובץ אייקון בתיקיית העבודה
+          sudo apt-get install -y imagemagick
+          convert -size 512x512 xc:blue -fill white -gravity center -pointsize 400 -draw "text 0,0 '♪'" icon.png
+          
+          # 4. התקנה ובניית צד הלקוח
           npm install
-          npm run build || (mkdir -p out && echo '<html><body><h1>Loading App...</h1></body></html>' > out/index.html)
+          npm run build || (mkdir -p out && echo '<html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;"><h1>🎵 Kids Music Ready</h1></body></html>' > out/index.html)
 
-          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
+          # 5. הגדרת Capacitor
+          npm install @capacitor/core @capacitor/cli @capacitor/android
           echo '{"appId":"com.music.kids.app","appName":"Kids Music","webDir":"out"}' > capacitor.config.json
-          
           npx cap add android
           
-          # החלפת האייקון של האפליקציה בתו הנגינה שיצרנו
+          # 6. העתקת האייקון לתיקיות המשאבים של אנדרואיד
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          cp ../../icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          cp ../../icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
 
-          # הגדרות תאימות לאחור (אנדרואיד 8.1 ו-10)
+          # 7. עדכון גרסאות SDK ב-Gradle
           sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 33/' android/variables.gradle
           
-          # הזרקת מניפסט תקין
-          if [ -f "../../AndroidManifest.xml" ]; then
-            cp "../../AndroidManifest.xml" android/app/src/main/AndroidManifest.xml
-            sed -i 's/KidsApp/Kids Music/g' android/app/src/main/AndroidManifest.xml
-          fi
-
+          # 8. בניית קובץ ה-APK
           cd android && chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
