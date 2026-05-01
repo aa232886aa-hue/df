@@ -21,25 +21,55 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build and Fix Duplicates
+      - name: Ultimate Build
         run: |
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי סביבה
+          # 1. ניקוי וסידור סביבה
           rm -rf android ios node_modules out capacitor.config.*
           mkdir -p out
-          echo '<html><body><h1>App Ready</h1></body></html>' > out/index.html
+          echo '<html><body style="background:#000;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;"><h1>App Ready</h1></body></html>' > out/index.html
           
-          # התקנה
+          # 2. התקנה
           npm install @capacitor/core @capacitor/cli @capacitor/android
           echo '{"appId":"com.myapp.kids","appName":"KidsApp","webDir":"out"}' > capacitor.config.json
           npx cap add android
           
-          # 💡 התיקון לכפילויות (Duplicate Classes)
-          # אנחנו יוצרים קובץ הגדרות שאומר למערכת להתעלם מכפילויות של Kotlin
+          # 3. יצירת קובץ Styles חסר כדי לפתור את שגיאת ה-SplashScreen
+          mkdir -p android/app/src/main/res/values
+          cat <<EOF > android/app/src/main/res/values/styles.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar"></style>
+              <style name="Theme.SplashScreen" parent="AppTheme"></style>
+          </resources>
+          EOF
+
+          # 4. יצירת מניפסט תקין שמשתמש בעיצוב שיצרנו
+          cat <<EOF > android/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com">
+              <application
+                  android:label="KidsApp"
+                  android:icon="@mipmap/ic_launcher"
+                  android:theme="@style/AppTheme">
+                  <activity
+                      android:name="com.getcapacitor.BridgeActivity"
+                      android:exported="true"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 5. תיקון כפילויות וגרסאות (תמיכה באנדרואיד 8.1)
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           android {
@@ -65,12 +95,12 @@ jobs:
           }
           EOF
 
-          # בנייה סופית
+          # 6. בנייה סופית
           cd android && chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: final-kids-app
+          name: my-final-app-apk
           path: "**/app-debug.apk"
