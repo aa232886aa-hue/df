@@ -21,32 +21,33 @@ jobs:
         with:
           node-version: 20
 
-      - name: Final Build
+      - name: Final Build and Fix Duplicates
         run: |
           unzip project.zip
           ROOT_PATH=$(find . -name package.json -print -quit)
           PROJECT_DIR=$(dirname "$ROOT_PATH")
           cd "$PROJECT_DIR"
           
-          # ניקוי יסודי
           rm -rf android ios node_modules out capacitor.config.*
           mkdir -p out
           echo '<html><body><h1>App Ready</h1></body></html>' > out/index.html
           
-          # התקנת המערכת
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init "KidsApp" "com.myapp.kids" --web-dir out
           npx cap add android
           
-          # 💡 במקום להחליף את המניפסט, אנחנו רק משנים את העיצוב לסטנדרטי
-          # זה פותר את השגיאה של ה-SplashScreen בלי לשבור את הקובץ
+          # תיקון המניפסט (Theme)
           sed -i 's/Theme.SplashScreen/Theme.AppCompat.Light.NoActionBar/g' android/app/src/main/AndroidManifest.xml
           
-          # עדכון גרסאות אנדרואיד בדרך הבטוחה
+          # תיקון כפילויות Kotlin בקובץ ה-build.gradle הקיים
+          # הפקודה הזו מחפשת את המילה dependencies ומוסיפה מתחתיה את ההחרגות
+          sed -i '/dependencies {/a \    modules { module("org.jetbrains.kotlin:kotlin-stdlib-jdk7") { replacedBy("org.jetbrains.kotlin:kotlin-stdlib") } }' android/app/build.gradle
+          sed -i '/dependencies {/a \    modules { module("org.jetbrains.kotlin:kotlin-stdlib-jdk8") { replacedBy("org.jetbrains.kotlin:kotlin-stdlib") } }' android/app/build.gradle
+          
+          # עדכון גרסאות אנדרואיד
           sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
           sed -i 's/targetSdkVersion = .*/targetSdkVersion = 34/' android/variables.gradle
           
-          # בנייה בלי "הזרקות" קוד חיצוניות
           cd android && chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
